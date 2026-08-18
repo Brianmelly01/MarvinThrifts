@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Sparkles } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { ProductCard } from '@/components/ui/ProductCard'
 
@@ -8,7 +8,7 @@ async function getNewDrops() {
     const products = await prisma.product.findMany({
       where: { isActive: true, sold: false },
       orderBy: [{ newArrival: 'desc' }, { createdAt: 'desc' }],
-      take: 8,
+      take: 10,
       include: {
         brand: true,
         images: { where: { isPrimary: true }, take: 1 },
@@ -44,42 +44,34 @@ export async function NewDropsSection() {
   if (products.length === 0) return null
 
   return (
-    <section className="section-padding bg-[#F5F4F0]" aria-labelledby="new-drops-heading">
+    <section className="py-12 sm:py-16 bg-[#FFFFFF]" aria-labelledby="new-drops-heading">
       <div className="container-brand">
         {/* Header */}
-        <div className="flex items-end justify-between mb-10">
-          <div>
-            <div className="text-[0.65rem] font-semibold tracking-[0.2em] uppercase text-[#C9A84C] mb-2">
-              Just Landed
-            </div>
+        <div className="flex items-center justify-between mb-8 pb-4 border-b border-[#F0EBE4]">
+          <div className="flex items-center gap-2">
+            <span className="text-[#C49E6C] text-sm">✦</span>
             <h2
               id="new-drops-heading"
-              className="font-display text-[clamp(2.5rem,5vw,4.5rem)] leading-none text-[#0A0A0A]"
+              className="text-lg sm:text-xl font-bold tracking-[0.08em] uppercase text-[#0A0A0A]"
             >
               NEW DROPS
             </h2>
           </div>
+
           <Link
             href="/shop?sort=newest"
-            className="hidden sm:flex items-center gap-2 text-[0.75rem] font-semibold tracking-[0.1em] uppercase text-[#0A0A0A] hover:text-[#C9A84C] transition-colors group"
+            className="flex items-center gap-1.5 text-[0.72rem] sm:text-xs font-bold tracking-[0.1em] uppercase text-[#0A0A0A] hover:text-[#C49E6C] transition-colors group"
           >
-            View All
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            VIEW ALL
+            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>
 
-        {/* Product grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-          {products.map((product, i) => (
-            <ProductCard key={product.id} product={product} priority={i < 4} />
+        {/* 5-column product grid on desktop, 2-column on mobile */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+          {products.slice(0, 5).map((product, i) => (
+            <ProductCard key={product.id} product={product} priority={i < 5} />
           ))}
-        </div>
-
-        {/* Mobile view all */}
-        <div className="mt-8 sm:hidden text-center">
-          <Link href="/shop?sort=newest" className="btn btn-outline btn-lg w-full">
-            View All New Drops
-          </Link>
         </div>
       </div>
     </section>

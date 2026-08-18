@@ -14,10 +14,10 @@
   --color-charcoal: #1A1A1A;
   --color-charcoal-mid: #2A2A2A;
   --color-charcoal-light: #3A3A3A;
-  --color-gold: #C9A84C;
-  --color-gold-light: #D4B870;
-  --color-gold-dark: #A8892E;
-  --color-gold-muted: rgba(201, 168, 76, 0.12);
+  --color-gold: #C49E6C;
+  --color-gold-light: #D5B487;
+  --color-gold-dark: #B38D5B;
+  --color-gold-muted: rgba(196, 158, 108, 0.12);
 
   /* Typography */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;

@@ -6,6 +6,7 @@ import { Footer } from '@/components/layout/Footer'
 import { CartDrawer } from '@/components/cart/CartDrawer'
 import { WhatsAppFloat } from '@/components/ui/WhatsAppFloat'
 import { Toaster } from '@/components/ui/Toaster'
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
 import { Providers } from './providers'
 
 const inter = Inter({
@@ -109,10 +110,11 @@ export default function RootLayout({
       <body className="bg-off-white text-black antialiased">
         <Providers>
           <Navbar />
-          <main>{children}</main>
+          <main className="pb-16 lg:pb-0">{children}</main>
           <Footer />
           <CartDrawer />
           <WhatsAppFloat />
+          <MobileBottomNav />
           <Toaster />
         </Providers>
       </body>
