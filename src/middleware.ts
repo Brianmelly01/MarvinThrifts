@@ -1,37 +1,45 @@
-import { auth } from '@/lib/auth'
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
-export default auth((req) => {
-  const { nextUrl, auth: session } = req
-  const isLoggedIn = !!session?.user
-  const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN'
+export async function middleware(req: NextRequest) {
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET || 'fallback-dev-secret-change-in-production',
+  })
 
-  const isAdminRoute = nextUrl.pathname.startsWith('/admin')
-  const isAccountRoute = nextUrl.pathname.startsWith('/account')
-  const isAuthRoute = nextUrl.pathname.startsWith('/auth')
+  const { pathname } = req.nextUrl
+  const isLoggedIn = !!token
+  const role = token?.role as string | undefined
+  const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN'
 
-  // Protect admin routes
-  if (isAdminRoute) {
+  // Protect /admin — redirect to login if not admin
+  if (pathname.startsWith('/admin')) {
     if (!isLoggedIn || !isAdmin) {
-      return NextResponse.redirect(new URL('/auth/login?callbackUrl=/admin', nextUrl))
+      return NextResponse.redirect(new URL('/auth/login?callbackUrl=/admin', req.url))
     }
   }
 
-  // Protect account routes
-  if (isAccountRoute && !isLoggedIn) {
-    return NextResponse.redirect(new URL('/auth/login?callbackUrl=/account', nextUrl))
+  // Protect /account — redirect to login if not authenticated
+  if (pathname.startsWith('/account') && !isLoggedIn) {
+    return NextResponse.redirect(new URL(`/auth/login?callbackUrl=${pathname}`, req.url))
   }
 
-  // Redirect logged-in users away from auth pages
-  if (isAuthRoute && isLoggedIn && !nextUrl.pathname.includes('error')) {
-    return NextResponse.redirect(new URL('/', nextUrl))
+  // Redirect logged-in users away from /auth pages (except /auth/error or /auth/forgot-password)
+  if (
+    pathname.startsWith('/auth') &&
+    !pathname.includes('error') &&
+    !pathname.includes('forgot-password') &&
+    isLoggedIn
+  ) {
+    return NextResponse.redirect(new URL('/', req.url))
   }
 
   return NextResponse.next()
-})
+}
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|images|icons|manifest.json).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|images|icons|manifest\\.json).*)',
   ],
 }

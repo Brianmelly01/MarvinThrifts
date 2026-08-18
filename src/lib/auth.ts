@@ -1,6 +1,5 @@
-import NextAuth, { type DefaultSession } from 'next-auth'
+import { getServerSession, type NextAuthOptions, type DefaultSession } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 
@@ -13,16 +12,23 @@ declare module 'next-auth' {
   }
 
   interface User {
+    id: string
     role: string
   }
 }
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
+declare module 'next-auth/jwt' {
+  interface JWT {
+    id?: string
+    role?: string
+  }
+}
+
+export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
   pages: {
     signIn: '/auth/login',
-    error: '/auth/error',
+    error: '/auth/login',
   },
   providers: [
     CredentialsProvider({
@@ -35,7 +41,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!credentials?.email || !credentials?.password) return null
 
         const user = await prisma.user.findUnique({
-          where: { email: String(credentials.email) },
+          where: { email: String(credentials.email).toLowerCase().trim() },
         })
 
         if (!user || !user.passwordHash) return null
@@ -66,11 +72,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token
     },
     async session({ session, token }) {
-      if (token) {
+      if (token && session.user) {
         session.user.id = token.id as string
         session.user.role = token.role as string
       }
       return session
     },
   },
-})
+  secret: process.env.NEXTAUTH_SECRET || 'fallback-dev-secret-change-in-production',
+}
+
+/**
+ * Server-side helper to get the authenticated session in App Router Server Components & Route Handlers
+ */
+export async function auth() {
+  return await getServerSession(authOptions)
+}

@@ -1,5 +1,6 @@
-// This is your Prisma schema file
-// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Prisma Schema — Marvin Thrifts
+// Provider: SQLite (dev) / PostgreSQL (prod)
+// Note: SQLite does not support native enums — all enum-like fields use String with documented values
 
 generator client {
   provider = "prisma-client-js"
@@ -10,9 +11,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================
+// ============================================================
 // USER & AUTH
-// ============================================
+// ============================================================
 
 model User {
   id            String    @id @default(cuid())
@@ -22,7 +23,7 @@ model User {
   phone         String?
   image         String?
   passwordHash  String?
-  role          UserRole  @default(CUSTOMER)
+  role          String    @default("CUSTOMER") // CUSTOMER | ADMIN | SUPER_ADMIN
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -70,41 +71,35 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-enum UserRole {
-  CUSTOMER
-  ADMIN
-  SUPER_ADMIN
-}
-
-// ============================================
+// ============================================================
 // CATALOG
-// ============================================
+// ============================================================
 
 model Brand {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  slug        String    @unique
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
   description String?
   logoUrl     String?
-  featured    Boolean   @default(false)
-  sortOrder   Int       @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  featured    Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   products Product[]
 }
 
 model Category {
-  id          String     @id @default(cuid())
-  name        String     @unique
-  slug        String     @unique
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
   description String?
   imageUrl    String?
   parentId    String?
-  comingSoon  Boolean    @default(false)
-  sortOrder   Int        @default(0)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  comingSoon  Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   parent   Category?  @relation("CategoryChildren", fields: [parentId], references: [id])
   children Category[] @relation("CategoryChildren")
@@ -112,57 +107,60 @@ model Category {
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  sku         String   @unique
-  slug        String   @unique
+  id          String  @id @default(cuid())
+  sku         String  @unique
+  slug        String  @unique
   name        String
   description String?
   brandId     String
   categoryId  String
 
-  // Pricing
-  price     Int // in KSh cents (e.g., 350000 = KSh 3,500)
-  salePrice Int? // optional sale price
+  // Pricing (stored in KSh, e.g. 3500 = KSh 3,500)
+  price     Int
+  salePrice Int?
 
   // Inventory
-  quantity      Int     @default(1)
-  sold          Boolean @default(false)
+  quantity      Int      @default(1)
+  sold          Boolean  @default(false)
   reservedUntil DateTime?
 
   // Condition
-  conditionScore Float  // 6.0 - 10.0
-  conditionLabel String // "Brand New", "Excellent", "Very Good", etc.
-  conditionNotes String? // Free text condition description
+  conditionScore Float  // 6.0–10.0
+  conditionLabel String // "Brand New" | "Excellent" | "Very Good" | "Good" | "Fair"
+  conditionNotes String?
 
-  // Product specifics (flexible for shoes, clothing, accessories)
-  sizeEU     String?
-  sizeUK     String?
-  sizeUS     String?
-  sizeCM     String?
-  sizeLabel  String? // For clothing: S/M/L/XL
-  gender     Gender  @default(UNISEX)
-  colorMain  String?
-  colorAccent String?
+  // Sizing
+  sizeEU    String?
+  sizeUK    String?
+  sizeUS    String?
+  sizeCM    String?
+  sizeLabel String? // S/M/L/XL for clothing
+
+  // Attributes
+  gender         String  @default("UNISEX") // MENS | WOMENS | UNISEX | KIDS
+  colorMain      String?
+  colorAccent    String?
+  colorSecondary String?
+
+  // Condition detail
+  defects         String?
+  creasing        String?
+  soleCondition   String?
+  insoleCondition String?
+  stains          String?
+  accessories     String?
 
   // Flags
-  featured    Boolean @default(false)
-  newArrival  Boolean @default(false)
-  verified    Boolean @default(false) // authenticity verified
+  featured    Boolean  @default(false)
+  newArrival  Boolean  @default(false)
+  verified    Boolean  @default(false)
   publishedAt DateTime?
-  isActive    Boolean @default(true)
+  isActive    Boolean  @default(true)
 
   // SEO
   seoTitle       String?
   seoDescription String?
   openGraphImage String?
-
-  // Defects / details
-  defects        String? // JSON array of defect strings
-  creasing       String?
-  soleCondition  String?
-  insoleCondition String?
-  stains         String?
-  accessories    String? // e.g. "Missing one lace"
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -170,10 +168,10 @@ model Product {
   brand    Brand    @relation(fields: [brandId], references: [id])
   category Category @relation(fields: [categoryId], references: [id])
 
-  images      ProductImage[]
-  orderItems  OrderItem[]
-  wishlist    WishlistItem[]
-  reviews     Review[]
+  images     ProductImage[]
+  orderItems OrderItem[]
+  wishlist   WishlistItem[]
+  reviews    Review[]
 
   @@index([slug])
   @@index([brandId])
@@ -197,16 +195,9 @@ model ProductImage {
   @@index([productId])
 }
 
-enum Gender {
-  MENS
-  WOMENS
-  UNISEX
-  KIDS
-}
-
-// ============================================
+// ============================================================
 // WISHLIST
-// ============================================
+// ============================================================
 
 model WishlistItem {
   id        String   @id @default(cuid())
@@ -220,12 +211,12 @@ model WishlistItem {
   @@unique([userId, productId])
 }
 
-// ============================================
+// ============================================================
 // ORDERS
-// ============================================
+// ============================================================
 
 model Address {
-  id           String  @id @default(cuid())
+  id           String   @id @default(cuid())
   userId       String?
   fullName     String
   phone        String
@@ -234,7 +225,7 @@ model Address {
   estate       String?
   buildingName String?
   instructions String?
-  isDefault    Boolean @default(false)
+  isDefault    Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -243,30 +234,28 @@ model Address {
 }
 
 model Order {
-  id               String      @id @default(cuid())
-  orderNumber      String      @unique
-  userId           String?
-  addressId        String?
-  status           OrderStatus @default(PENDING)
-  paymentStatus    PaymentStatus @default(UNPAID)
-  deliveryMethod   DeliveryMethod
-  deliveryFee      Int         // in KSh
-  subtotal         Int         // in KSh
-  total            Int         // in KSh
-  couponId         String?
-  couponDiscount   Int         @default(0)
+  id             String @id @default(cuid())
+  orderNumber    String @unique
+  userId         String?
+  addressId      String?
+  status         String @default("PENDING")         // PENDING|PAYMENT_CONFIRMED|PROCESSING|PACKED|DISPATCHED|SHIPPED|OUT_FOR_DELIVERY|DELIVERED|CANCELLED|REFUNDED
+  paymentStatus  String @default("UNPAID")          // UNPAID|PENDING|PAID|FAILED|REFUNDED
+  deliveryMethod String                             // NAIROBI|NATIONWIDE|PICKUP
+  deliveryFee    Int
+  subtotal       Int
+  total          Int
+  couponId       String?
+  couponDiscount Int    @default(0)
 
-  // Guest checkout fields
-  guestName        String?
-  guestEmail       String?
-  guestPhone       String?
+  // Guest checkout
+  guestName  String?
+  guestEmail String?
+  guestPhone String?
 
-  // WhatsApp order
-  isWhatsappOrder  Boolean     @default(false)
-
-  notes            String?
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  isWhatsappOrder Boolean  @default(false)
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   address  Address?  @relation(fields: [addressId], references: [id])
@@ -286,7 +275,7 @@ model OrderItem {
   orderId   String
   productId String
   quantity  Int    @default(1)
-  price     Int    // price at time of purchase in KSh
+  price     Int    // price at time of purchase
 
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])
@@ -295,58 +284,32 @@ model OrderItem {
 }
 
 model OrderTimeline {
-  id        String      @id @default(cuid())
+  id        String   @id @default(cuid())
   orderId   String
-  status    OrderStatus
+  status    String   // OrderStatus value
   note      String?
-  createdAt DateTime    @default(now())
+  createdAt DateTime @default(now())
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
-enum OrderStatus {
-  PENDING
-  PAYMENT_CONFIRMED
-  PROCESSING
-  PACKED
-  SHIPPED
-  OUT_FOR_DELIVERY
-  DELIVERED
-  CANCELLED
-  REFUNDED
-}
-
-enum PaymentStatus {
-  UNPAID
-  PENDING
-  PAID
-  FAILED
-  REFUNDED
-}
-
-enum DeliveryMethod {
-  NAIROBI
-  NATIONWIDE
-  PICKUP
-}
-
-// ============================================
+// ============================================================
 // PAYMENTS
-// ============================================
+// ============================================================
 
 model Payment {
-  id              String        @id @default(cuid())
-  orderId         String
-  method          PaymentMethod
-  amount          Int
-  status          PaymentStatus @default(PENDING)
-  reference       String?       @unique // M-Pesa CheckoutRequestID or card ref
-  mpesaReceiptNo  String?
-  paidAt          DateTime?
-  failureReason   String?
-  metadata        String?       // JSON for extra payment data
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id             String   @id @default(cuid())
+  orderId        String
+  method         String   // MPESA|CARD|CASH_ON_DELIVERY|BANK_TRANSFER
+  amount         Int
+  status         String   @default("PENDING") // UNPAID|PENDING|PAID|FAILED|REFUNDED
+  reference      String?  @unique // M-Pesa CheckoutRequestID or card ref
+  mpesaReceiptNo String?
+  paidAt         DateTime?
+  failureReason  String?
+  metadata       String?  // JSON extra data
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
@@ -354,27 +317,20 @@ model Payment {
   @@index([reference])
 }
 
-enum PaymentMethod {
-  MPESA
-  CARD
-  CASH_ON_DELIVERY
-  BANK_TRANSFER
-}
-
-// ============================================
+// ============================================================
 // REVIEWS
-// ============================================
+// ============================================================
 
 model Review {
-  id        String        @id @default(cuid())
+  id        String   @id @default(cuid())
   userId    String
   productId String
-  rating    Int           // 1-5
+  rating    Int      // 1–5
   comment   String?
-  verified  Boolean       @default(false) // verified purchase
-  status    ReviewStatus  @default(PENDING)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  verified  Boolean  @default(false)
+  status    String   @default("PENDING") // PENDING|APPROVED|REJECTED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -382,29 +338,23 @@ model Review {
   @@unique([userId, productId])
 }
 
-enum ReviewStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-// ============================================
+// ============================================================
 // COUPONS
-// ============================================
+// ============================================================
 
 model Coupon {
-  id            String       @id @default(cuid())
-  code          String       @unique
+  id            String   @id @default(cuid())
+  code          String   @unique
   description   String?
-  type          CouponType
-  value         Int          // percentage (0-100) or fixed amount in KSh
-  minOrderValue Int?         // minimum order value for coupon to apply
-  maxUses       Int?         // null = unlimited
-  usedCount     Int          @default(0)
-  isActive      Boolean      @default(true)
+  type          String   // PERCENTAGE|FIXED
+  value         Int      // percentage 0-100 or fixed KSh amount
+  minOrderValue Int?
+  maxUses       Int?
+  usedCount     Int      @default(0)
+  isActive      Boolean  @default(true)
   expiresAt     DateTime?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   orders Order[]
   usages CouponUsage[]
@@ -420,14 +370,9 @@ model CouponUsage {
   coupon Coupon @relation(fields: [couponId], references: [id])
 }
 
-enum CouponType {
-  PERCENTAGE
-  FIXED
-}
-
-// ============================================
+// ============================================================
 // SITE SETTINGS
-// ============================================
+// ============================================================
 
 model SiteSetting {
   id        String   @id @default(cuid())
